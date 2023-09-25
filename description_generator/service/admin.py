@@ -4,9 +4,9 @@ from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.urls import path
 
-from service.connector import from_xlsx_file_data_to_server_create_data
-from service.models import Product, Monitoring, Document, Department
-from service.services import create_nomenclature_elements, check_charts, create_document_on_server, create_organizations
+from .connector import from_xlsx_file_data_to_server_create_data
+from .models import Product, Monitoring, Document, Department
+from .services import create_nomenclature_elements, check_charts, create_document_on_server, create_organizations
 
 
 @admin.register(Product)
