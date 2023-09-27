@@ -6,34 +6,40 @@ from pydantic import parse_obj_as
 
 from iiko.models import UserLog
 from iiko.server import IikoServer
-from .dataclasses.charts import ResponseData
-from .dataclasses.document import DocumentData
-from .dataclasses.nomenclature import ProductData
-from .models import Product, Monitoring, Department
+from service.dataclasses.charts import ResponseData
+from service.dataclasses.document import DocumentData
+from service.dataclasses.nomenclature import ProductData
+from service.models import Product, Monitoring, Department, Chain
 
 
-def create_nomenclature_elements() -> None:
+def create_nomenclature_elements() -> bool:
     """
     Создание и/или обновление всех элементов номенклатуры чейна в БД.
     Обновление по uuid элемента.
     """
     UserLog.objects.create(status='Началась загрузка элементов номенклатуры')
-    iiko_server = IikoServer()
+    iiko_server = IikoServer(Chain.objects.first())
     response = iiko_server.products_list(product=None)
     if response.status_code == 200:
         products = parse_obj_as(list[ProductData], json.loads(response.text))
         for product in products:
-            Product.objects.update_or_create(
-                uuid=product.uuid,
-                defaults={
-                    'name': product.name,
-                    'description': product.description,
-                    'type': product.type,
-                    'num': product.num}
-            )
+            if not product.deleted:
+                Product.objects.update_or_create(
+                    uuid=product.uuid,
+                    defaults={
+                        'name': product.name,
+                        'description': product.description,
+                        'type': product.type,
+                        'num': product.num,
+                    }
+                )
+            elif deleted_product := Product.objects.filter(uuid=product.uuid).first():
+                deleted_product.delete()
         UserLog.objects.create(status='Загрузка элементов номенклатуры выполнена успешно')
+        return True
     else:
         UserLog.objects.create(status='Загрузка элементов номенклатуры не выполнена')
+        return False
 
 
 def change_product_description(
@@ -84,7 +90,7 @@ def check_charts() -> None:
     """
     UserLog.objects.create(status='Началась проверка ТТК всех блюд')
     products = Product.objects.filter(type='DISH')
-    iiko_server = IikoServer()
+    iiko_server = IikoServer(Chain.objects.first())
     for product in products:
         if product.num is None:
             Monitoring.objects.create(
@@ -100,34 +106,39 @@ def check_charts() -> None:
             response = iiko_server.chart(product)
             if response.status_code == 200:
                 response_data = ResponseData.parse_raw(response.text)
-                chart = response_data.prepared_charts[0]
-                if chart is not None:
-                    items = chart.items
-                    if len(items) != 0:
-                        empty_description_product_list, dish_description = create_and_check_descriptions(items)
-                        if empty_description_product_list is None and dish_description is None:
-                            monitoring.status = 'Ошибка'
-                            monitoring.error = 'В составе ТТК содержится элемент, отсутствующий в номенклатуре'
-                            monitoring.save()
-                        else:
-                            if len(empty_description_product_list) != 0:
+                if response_data is not None:
+                    chart = response_data.prepared_charts[0]
+                    if chart is not None:
+                        items = chart.items
+                        if len(items) != 0:
+                            empty_description_product_list, dish_description = create_and_check_descriptions(items)
+                            if empty_description_product_list is None and dish_description is None:
                                 monitoring.status = 'Ошибка'
-                                monitoring.error = 'Не заполнено поле "Описание" у ингредиентов: ' + '; '.join(
-                                    empty_description_product_list)
+                                monitoring.error = 'В составе ТТК содержится элемент, отсутствующий в номенклатуре'
                                 monitoring.save()
                             else:
-                                if change_product_description(product, dish_description, iiko_server):
-                                    monitoring.status = 'Успешно'
-                                    monitoring.save()
-                                    product.description = dish_description
-                                    product.save()
-                                else:
+                                if len(empty_description_product_list) != 0:
                                     monitoring.status = 'Ошибка'
-                                    monitoring.error = 'Не удалось изменить описание у блюда'
+                                    monitoring.error = 'Не заполнено поле "Описание" у ингредиентов: ' + '; '.join(
+                                        empty_description_product_list)
                                     monitoring.save()
+                                else:
+                                    if change_product_description(product, dish_description, iiko_server):
+                                        monitoring.status = 'Успешно'
+                                        monitoring.save()
+                                        product.description = dish_description
+                                        product.save()
+                                    else:
+                                        monitoring.status = 'Ошибка'
+                                        monitoring.error = 'Не удалось изменить описание у блюда'
+                                        monitoring.save()
+                        else:
+                            monitoring.status = 'Ошибка'
+                            monitoring.error = 'ТТК не заполнена'
+                            monitoring.save()
                     else:
                         monitoring.status = 'Ошибка'
-                        monitoring.error = 'ТТК не заполнена'
+                        monitoring.error = 'У блюда отсутствует ТТК'
                         monitoring.save()
                 else:
                     monitoring.status = 'Ошибка'
@@ -142,32 +153,35 @@ def check_charts() -> None:
     UserLog.objects.create(status='Проверка ТТК выполнена успешно')
 
 
-def create_organizations():
+def create_organizations() -> bool:
     """
     Создание и/или обновление торговых точек в БД.
     Обновление по uuid торговой точки.
     """
-    UserLog.objects.create(status='Началась загрузка торговых точек')
-    iiko_server = IikoServer()
-    response = iiko_server.departments()
-    if response.status_code == 200:
-        departments_xml_tree = ET.ElementTree(ET.fromstring(response.text))
-        for item in departments_xml_tree.iter('corporateItemDto'):
-            department_name = item.find('name').text
-            department_uuid = item.find('id').text
-            Department.objects.update_or_create(
-                uuid=department_uuid,
-                defaults={'name': department_name})
-        UserLog.objects.create(status='Загрузка торговых точек выполнена успешно')
-    else:
-        UserLog.objects.create(status='Загрузка торговых точек не выполнена')
+    if Chain.objects.exists():
+        UserLog.objects.create(status='Началась загрузка торговых точек')
+        iiko_server = IikoServer(Chain.objects.first())
+        response = iiko_server.departments()
+        if response.status_code == 200:
+            departments_xml_tree = ET.ElementTree(ET.fromstring(response.text))
+            for item in departments_xml_tree.iter('corporateItemDto'):
+                department_name = item.find('name').text
+                department_uuid = item.find('id').text
+                Department.objects.update_or_create(
+                    uuid=department_uuid,
+                    defaults={'name': department_name})
+            UserLog.objects.create(status='Загрузка торговых точек выполнена успешно')
+            return True
+        else:
+            UserLog.objects.create(status='Загрузка торговых точек не выполнена')
+            return False
 
 
 def create_document_on_server(document: DocumentData) -> Union[Tuple[bool, str], Tuple[bool, dict]]:
     """
     Отправка приказа об изменении цен на сервер.
     """
-    iiko_server = IikoServer()
+    iiko_server = IikoServer(Chain.objects.first())
     response = iiko_server.document(document)
     if response.status_code == 200:
         response = json.loads(response.text)

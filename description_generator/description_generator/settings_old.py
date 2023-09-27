@@ -82,3 +82,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LANGUAGE_CODE = 'ru-Ru'
 
 TIME_ZONE = 'Europe/Moscow'
+
+LOGIN_REDIRECT_URL = 'admin_page/'

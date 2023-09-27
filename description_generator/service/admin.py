@@ -4,9 +4,9 @@ from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.urls import path
 
-from .connector import from_xlsx_file_data_to_server_create_data
-from .models import Product, Monitoring, Document, Department
-from .services import create_nomenclature_elements, check_charts, create_document_on_server, create_organizations
+from service.connector import from_xlsx_file_data_to_server_create_data
+from service.models import Product, Monitoring, Document, Department, Chain
+from service.services import create_nomenclature_elements, check_charts, create_document_on_server, create_organizations
 
 
 @admin.register(Product)
@@ -50,10 +50,9 @@ class MonitoringAdmin(admin.ModelAdmin):
         return my_urls + urls
 
     def load_data(self, request):
-        create_organizations()
-        create_nomenclature_elements()
-        check_charts()
-        self.message_user(request, 'Данные успешно загружены')
+        if create_organizations() and create_nomenclature_elements():
+            check_charts()
+            self.message_user(request, 'Данные успешно загружены')
         return HttpResponseRedirect('../')
 
     def has_add_permission(self, request):
@@ -104,6 +103,11 @@ class DocumentAdmin(admin.ModelAdmin):
         else:
             messages.set_level(request, messages.ERROR)
             messages.error(request, 'Документ не обработан, проверьте файл!')
+
+
+@admin.register(Chain)
+class ChainAdmin(admin.ModelAdmin):
+    list_display = ('name', 'server_url', 'server_port', 'server_login', 'server_password')
 
 
 # @admin.register(Department)

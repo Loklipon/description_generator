@@ -12,3 +12,4 @@ class ProductData(BaseModel):
     description: Optional[str]
     type: Optional[str]
     num: Optional[str]
+    deleted: bool
