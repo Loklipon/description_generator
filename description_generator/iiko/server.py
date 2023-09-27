@@ -2,10 +2,11 @@ import hashlib
 from typing import Union
 
 import requests
+from django.utils import timezone as tz
 
 from iiko.models import ServerLog
 from service.dataclasses.document import DocumentData
-from service.models import Product
+from service.models import Product, Chain
 
 
 class IikoServer:
@@ -13,11 +14,11 @@ class IikoServer:
     iiko Server.
     """
 
-    def __init__(self):
-        self.login = 'admin'
-        self.password = 'resto#test2'
-        self.host = 'https://demostend-open-servis-71.iiko.it'
-        self.port = '443'
+    def __init__(self, org: Chain):
+        self.login = org.server_login
+        self.password = org.server_password
+        self.host = org.server_url
+        self.port = org.server_port
         self.url = self.host + ':' + self.port
         self.params = {'key': self._auth()}
 
@@ -60,17 +61,19 @@ class IikoServer:
 
     def chart(self, product: Product) -> requests.Response:
         url = self.url + '/resto/api/v2/assemblyCharts/getPrepared'
-        headers = {'content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json'}
         params = self.params.copy()
-        params['date'] = '2023-09-14'
-        params['productId'] = str(product.uuid)
+        params.update({
+            'date': tz.now().strftime('%Y-%m-%d'),
+            'productId': str(product.uuid)
+        })
         response = requests.get(url, params=params, headers=headers)
         self._log(response, url=response.url, body=None)
         return response
 
-    def product_update(self, body: dict) -> requests.Response:
+    def product_update(self, body: str) -> requests.Response:
         url = self.url + '/resto/api/v2/entities/products/update'
-        headers = {'content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json'}
         params = self.params.copy()
         params['overrideFastCode'] = 'true'
         response = requests.post(url, data=body, params=params, headers=headers)

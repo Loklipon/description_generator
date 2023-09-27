@@ -129,3 +129,36 @@ class Document(models.Model):
         verbose_name='Body ответа',
         null=True
     )
+
+
+class Chain(models.Model):
+    """
+    Чейн.
+    """
+
+    class Meta:
+        verbose_name = 'учетные данные'
+        verbose_name_plural = 'Учетные данные'
+
+    def __str__(self):
+        return 'Учетные данные'
+
+    name = models.CharField(
+        max_length=200,
+        verbose_name='Название организации',
+    )
+    server_url = models.URLField(
+        verbose_name='Адрес сервера'
+    )
+    server_login = models.CharField(
+        max_length=200,
+        verbose_name='Логин на сервере',
+    )
+    server_password = models.CharField(
+        max_length=200,
+        verbose_name='Пароль',
+    )
+    server_port = models.CharField(
+        max_length=200,
+        verbose_name='Порт'
+    )

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -23,4 +23,4 @@ class ResponseData(BaseModel):
     """
     Дата-класс списка ТТК.
     """
-    prepared_charts: list[Union[PreparedChartData, None]] = Field(alias='preparedCharts')
+    prepared_charts: Optional[list[Union[PreparedChartData, None]]] = Field(alias='preparedCharts')
