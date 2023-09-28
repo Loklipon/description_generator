@@ -150,15 +150,21 @@ class Chain(models.Model):
     server_url = models.URLField(
         verbose_name='Адрес сервера'
     )
+    server_port = models.CharField(
+        max_length=200,
+        verbose_name='Порт'
+    )
     server_login = models.CharField(
         max_length=200,
-        verbose_name='Логин на сервере',
+        verbose_name='Логин',
     )
     server_password = models.CharField(
         max_length=200,
         verbose_name='Пароль',
     )
-    server_port = models.CharField(
-        max_length=200,
-        verbose_name='Порт'
+
+
+class Config(models.Model):
+    check_button = models.BooleanField(
+        default=False
     )
