@@ -6,10 +6,10 @@ from pydantic import parse_obj_as
 
 from iiko.models import UserLog
 from iiko.server import IikoServer
-from service.dataclasses.charts import ResponseData
-from service.dataclasses.document import DocumentData
-from service.dataclasses.nomenclature import ProductData
-from service.models import Product, Monitoring, Department, Chain
+from .dataclasses.charts import ResponseData
+from .dataclasses.document import DocumentData
+from .dataclasses.nomenclature import ProductData
+from .models import Product, Monitoring, Department, Chain
 
 
 def create_nomenclature_elements() -> bool:

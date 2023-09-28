@@ -5,9 +5,9 @@ from django.http import HttpResponseRedirect
 from django.urls import path
 from django.utils import timezone
 
-from service.connector import from_xlsx_file_data_to_server_create_data
-from service.models import Product, Monitoring, Document, Department, Chain, Config
-from service.services import create_document_on_server
+from .connector import from_xlsx_file_data_to_server_create_data
+from .models import Product, Monitoring, Document, Department, Chain, Config
+from .services import create_document_on_server
 
 
 @admin.register(Product)
