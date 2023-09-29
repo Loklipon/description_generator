@@ -21,18 +21,21 @@ def from_xlsx_file_data_to_server_create_data(file):
     first_sheet = workbook.get_sheet_names()[0]
     worksheet = workbook.get_sheet_by_name(first_sheet)
     for i, row in enumerate(worksheet.iter_rows(min_row=2), start=1):
-        try:
-            item = {
-                'num': i,
-                'product_id': str(Product.objects.get(num=row[0].value).uuid),
-                'price': row[2].value,
-                'department_id': str(Department.objects.get(name=row[3].value).uuid),
-                'dish_of_day': False,
-                'including': True,
-                'flyer_program': False,
-                'product_size_id': None
-            }
-        except (Product.DoesNotExist, Department.DoesNotExist):
+        if row[0].value is None or row[2].value is None or row[3].value is None:
+            continue
+        product = Product.objects.filter(num=row[0].value)
+        department = Department.objects.filter(name=row[3].value)
+        if product.count() != 1 or department.count() != 1:
             return None
+        item = {
+            'num': i,
+            'product_id': str(product.first().uuid),
+            'price': row[2].value,
+            'department_id': str(department.first().uuid),
+            'dish_of_day': False,
+            'including': True,
+            'flyer_program': False,
+            'product_size_id': None
+        }
         document_data['items'].append(item)
     return DocumentData(**document_data)
