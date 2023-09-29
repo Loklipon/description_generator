@@ -3,10 +3,11 @@ from datetime import timedelta
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.urls import path
+from django.utils import timezone
 
-from service.connector import from_xlsx_file_data_to_server_create_data
-from service.models import Product, Monitoring, Document, Department, Chain
-from service.services import create_nomenclature_elements, check_charts, create_document_on_server, create_organizations
+from .connector import from_xlsx_file_data_to_server_create_data
+from .models import Product, Monitoring, Document, Chain, Config
+from .services import create_document_on_server
 
 
 @admin.register(Product)
@@ -39,6 +40,8 @@ class MonitoringAdmin(admin.ModelAdmin):
             return True
         if obj.status == 'Ошибка':
             return False
+        if not obj.status:
+            return False
 
     get_check.boolean = True
 
@@ -50,9 +53,16 @@ class MonitoringAdmin(admin.ModelAdmin):
         return my_urls + urls
 
     def load_data(self, request):
-        if create_organizations() and create_nomenclature_elements():
-            check_charts()
-            self.message_user(request, 'Данные успешно загружены')
+        if timezone.localtime(timezone.now()).hour in [23, 0, 1, 2]:
+            messages.error(request, 'В данное время нельзя осуществить ручную загрузку данных')
+            return HttpResponseRedirect('../')
+        config = Config.objects.first()
+        if config.check_button:
+            messages.error(request, 'Предыдущая загрузка данных еще не завершена')
+            return HttpResponseRedirect('../')
+        config.check_button = True
+        config.save()
+        self.message_user(request, 'Началась загрузка данных')
         return HttpResponseRedirect('../')
 
     def has_add_permission(self, request):
@@ -67,8 +77,13 @@ class MonitoringAdmin(admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('organization', 'document_number', 'get_date')
+    list_display = ('get_name_organization', 'document_number', 'get_date')
     readonly_fields = ('document_number', 'date', 'organization', 'response')
+
+    def get_name_organization(self, obj):
+        return obj.organization.name
+
+    get_name_organization.short_description = 'Организация'
 
     def get_date(self, obj):
         return (obj.date + timedelta(hours=3)).strftime('%d.%m.%Y')
@@ -87,14 +102,14 @@ class DocumentAdmin(admin.ModelAdmin):
             result, response = create_document_on_server(document)
             if result:
                 obj.document_number = response['response']['documentNumber']
-                obj.organization = Department.objects.get(uuid=document.items[0].department_id)
+                obj.organization = Chain.objects.first()
                 obj.response = response
                 obj.file.delete()
                 messages.set_level(request, messages.SUCCESS)
                 messages.success(request, 'Документ успешно загружен.')
                 super().save_model(request, obj, form, change)
             else:
-                obj.organization = Department.objects.get(uuid=document.items[0].department_id)
+                obj.organization = Chain.objects.first()
                 obj.response = response
                 obj.file.delete()
                 messages.set_level(request, messages.ERROR)
@@ -124,6 +139,6 @@ class ChainAdmin(admin.ModelAdmin):
 #         return False
 
 
-admin.site.site_header = 'Хлеб Насущный | Description Creator'
+admin.site.site_header = 'Хлеб Насущный | Description Generator'
 
 admin.site.index_title = ''

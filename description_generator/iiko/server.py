@@ -48,9 +48,11 @@ class IikoServer:
     def products_list(self, product: Union[Product, None]) -> requests.Response:
         url = self.url + '/resto/api/v2/entities/products/list'
         headers = {'Content-Type': 'application/json'}
+        params = self.params.copy()
         if product:
-            params = self.params.copy()
-            params['ids'] = str(product.uuid)
+            params.update({
+                'ids': str(product.uuid)
+            })
             response = requests.get(url, params=params, headers=headers)
             self._log(response, url=response.url, body=None)
         else:
