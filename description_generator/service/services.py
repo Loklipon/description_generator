@@ -178,11 +178,13 @@ def create_organizations() -> bool:
         if response.status_code == 200:
             departments_xml_tree = ET.ElementTree(ET.fromstring(response.text))
             for item in departments_xml_tree.iter('corporateItemDto'):
-                department_name = item.find('name').text
-                department_uuid = item.find('id').text
-                Department.objects.update_or_create(
-                    uuid=department_uuid,
-                    defaults={'name': department_name})
+                department_type = item.find('type').text
+                if department_type == 'DEPARTMENT':
+                    department_name = item.find('name').text
+                    department_uuid = item.find('id').text
+                    Department.objects.update_or_create(
+                        uuid=department_uuid,
+                        defaults={'name': department_name})
             UserLog.objects.create(status='Загрузка торговых точек выполнена успешно')
             return True
         else:
