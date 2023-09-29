@@ -6,7 +6,7 @@ from django.urls import path
 from django.utils import timezone
 
 from .connector import from_xlsx_file_data_to_server_create_data
-from .models import Product, Monitoring, Document, Department, Chain, Config
+from .models import Product, Monitoring, Document, Chain, Config
 from .services import create_document_on_server
 
 
@@ -77,8 +77,13 @@ class MonitoringAdmin(admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('organization', 'document_number', 'get_date')
+    list_display = ('get_name_organization', 'document_number', 'get_date')
     readonly_fields = ('document_number', 'date', 'organization', 'response')
+
+    def get_name_organization(self, obj):
+        return obj.organization.name
+
+    get_name_organization.short_description = 'Организация'
 
     def get_date(self, obj):
         return (obj.date + timedelta(hours=3)).strftime('%d.%m.%Y')
@@ -97,14 +102,14 @@ class DocumentAdmin(admin.ModelAdmin):
             result, response = create_document_on_server(document)
             if result:
                 obj.document_number = response['response']['documentNumber']
-                obj.organization = Department.objects.get(uuid=document.items[0].department_id)
+                obj.organization = Chain.objects.first()
                 obj.response = response
                 obj.file.delete()
                 messages.set_level(request, messages.SUCCESS)
                 messages.success(request, 'Документ успешно загружен.')
                 super().save_model(request, obj, form, change)
             else:
-                obj.organization = Department.objects.get(uuid=document.items[0].department_id)
+                obj.organization = Chain.objects.first()
                 obj.response = response
                 obj.file.delete()
                 messages.set_level(request, messages.ERROR)

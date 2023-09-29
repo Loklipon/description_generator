@@ -35,6 +35,7 @@ class Product(models.Model):
         null=True,
         verbose_name='Артикул'
     )
+    checked = models.BooleanField()
 
 
 class Monitoring(models.Model):
@@ -93,6 +94,39 @@ class Department(models.Model):
     )
 
 
+class Chain(models.Model):
+    """
+    Чейн.
+    """
+
+    class Meta:
+        verbose_name = 'учетные данные'
+        verbose_name_plural = 'Учетные данные'
+
+    def __str__(self):
+        return self.name
+
+    name = models.CharField(
+        max_length=200,
+        verbose_name='Название организации',
+    )
+    server_url = models.URLField(
+        verbose_name='Адрес сервера'
+    )
+    server_port = models.CharField(
+        max_length=200,
+        verbose_name='Порт'
+    )
+    server_login = models.CharField(
+        max_length=200,
+        verbose_name='Логин',
+    )
+    server_password = models.CharField(
+        max_length=200,
+        verbose_name='Пароль',
+    )
+
+
 class Document(models.Model):
     """
     Приказ.
@@ -116,9 +150,9 @@ class Document(models.Model):
         null=True
     )
     organization = models.ForeignKey(
-        Department,
+        Chain,
         on_delete=models.SET_NULL,
-        verbose_name='Торговая точка',
+        verbose_name='Организация',
         null=True
     )
     file = models.FileField(
@@ -128,39 +162,6 @@ class Document(models.Model):
     response = models.TextField(
         verbose_name='Body ответа',
         null=True
-    )
-
-
-class Chain(models.Model):
-    """
-    Чейн.
-    """
-
-    class Meta:
-        verbose_name = 'учетные данные'
-        verbose_name_plural = 'Учетные данные'
-
-    def __str__(self):
-        return 'Учетные данные'
-
-    name = models.CharField(
-        max_length=200,
-        verbose_name='Название организации',
-    )
-    server_url = models.URLField(
-        verbose_name='Адрес сервера'
-    )
-    server_port = models.CharField(
-        max_length=200,
-        verbose_name='Порт'
-    )
-    server_login = models.CharField(
-        max_length=200,
-        verbose_name='Логин',
-    )
-    server_password = models.CharField(
-        max_length=200,
-        verbose_name='Пароль',
     )
 
 

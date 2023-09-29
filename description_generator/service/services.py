@@ -25,25 +25,17 @@ def create_nomenclature_elements() -> bool:
     if response.status_code == 200:
         products = parse_obj_as(list[ProductData], json.loads(response.text))
         for product in products:
-            Product.objects.create(
+            Product.objects.update_or_create(
                 uuid=product.uuid,
-                name=product.name,
-                description=product.description,
-                type=product.type,
-                num=product.num
+                defaults={
+                    'name': product.name,
+                    'description': product.description,
+                    'type': product.type,
+                    'num': product.num,
+                    'checked': False
+                }
             )
-            # if not product.deleted:
-            #     Product.objects.update_or_create(
-            #         uuid=product.uuid,
-            #         defaults={
-            #             'name': product.name,
-            #             'description': product.description,
-            #             'type': product.type,
-            #             'num': product.num,
-            #         }
-            #     )
-            # elif deleted_product := Product.objects.filter(uuid=product.uuid).first():
-            #     deleted_product.delete()
+        Product.objects.filter(checked=True).delete()
         UserLog.objects.create(status='Загрузка элементов номенклатуры выполнена успешно')
         return True
     else:
@@ -99,9 +91,11 @@ def check_charts() -> None:
     """
     UserLog.objects.create(status='Началась проверка ТТК всех блюд')
     try:
-        products = Product.objects.filter(type='DISH')
+        products = Product.objects.filter(type='DISH', checked=False)
         iiko_server = IikoServer(Chain.objects.first())
         for product in products:
+            product.checked = True
+            product.save()
             if product.num is None:
                 Monitoring.objects.create(
                     dish_name=product.name,
