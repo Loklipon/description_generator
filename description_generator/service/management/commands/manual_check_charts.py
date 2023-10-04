@@ -20,6 +20,5 @@ class Command(BaseCommand):
                     print(e)
                 finally:
                     config.check_button = False
-                    config.save()
                     config.process = False
                     config.save()

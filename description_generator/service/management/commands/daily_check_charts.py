@@ -18,6 +18,5 @@ class Command(BaseCommand):
                 check_charts()
 
             config.process = False
-            config.save()
             config.check_button = False
             config.save()
