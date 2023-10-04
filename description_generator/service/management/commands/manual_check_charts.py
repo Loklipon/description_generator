@@ -10,12 +10,16 @@ class Command(BaseCommand):
 
         config = Config.objects.first()
         if config.check_button:
-            try:
-                if get_departments() and get_nomenclature():
-                    check_charts()
-                    pass
-            except Exception as e:
-                print(e)
-            finally:
-                config.check_button = False
+            if not config.process:
+                config.process = True
                 config.save()
+                try:
+                    if get_departments() and get_nomenclature():
+                        check_charts()
+                except Exception as e:
+                    print(e)
+                finally:
+                    config.check_button = False
+                    config.save()
+                    config.process = False
+                    config.save()
