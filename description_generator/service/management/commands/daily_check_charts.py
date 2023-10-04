@@ -1,11 +1,10 @@
 from django.core.management.base import BaseCommand
 
-from service.services import create_organizations, create_nomenclature_elements
+from service.charts_services import get_departments, get_nomenclature, check_charts
 
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        if create_organizations() and create_nomenclature_elements():
-            # check_charts()
-            pass
+        if get_departments() and get_nomenclature():
+            check_charts()

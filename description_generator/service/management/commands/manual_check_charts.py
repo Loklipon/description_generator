@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
+from service.charts_services import get_departments, get_nomenclature, check_charts
 from service.models import Config
-from service.services import create_organizations, create_nomenclature_elements
 
 
 class Command(BaseCommand):
@@ -11,8 +11,8 @@ class Command(BaseCommand):
         config = Config.objects.first()
         if config.check_button:
             try:
-                if create_organizations() and create_nomenclature_elements():
-                    # check_charts()
+                if get_departments() and get_nomenclature():
+                    check_charts()
                     pass
             except Exception as e:
                 print(e)

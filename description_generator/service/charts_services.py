@@ -7,12 +7,20 @@ from pydantic import parse_obj_as
 from iiko.models import UserLog
 from iiko.server import IikoServer
 from .dataclasses.charts import ResponseData
-from .dataclasses.document import DocumentData
 from .dataclasses.nomenclature import ProductData
 from .models import Product, Monitoring, Department, Chain
 
+FILE_ERRORS_MESSAGES = {
+    'empty_field': 'Не заполнено одно из полей. Строки: ',
+    'wrong_type_of_filed': 'В одном из полей неверный тип данных. Строки: ',
+    'no_product': 'В номенклатуре нет продукта с таким артикулом. Строки: ',
+    'a_lot_of_products': 'В номенклатуре две или более единицы таким артикулом. Строки: ',
+    'no_department': 'Нет торговой точки с таким названием. Строки: ',
+    'any_other': 'У организации две или более торговых точек с одинаковым названием. Строки: '
+}
 
-def create_nomenclature_elements() -> bool:
+
+def get_nomenclature() -> bool:
     """
     Создание и/или обновление всех элементов номенклатуры чейна в БД.
     Обновление по uuid элемента.
@@ -43,10 +51,9 @@ def create_nomenclature_elements() -> bool:
         return False
 
 
-def change_product_description(
-        product: Product,
-        description: str,
-        iiko_server: IikoServer) -> bool:
+def change_product_description_on_server(product: Product,
+                                         description: str,
+                                         iiko_server: IikoServer) -> bool:
     """
     Изменение описания продукта на сервере.
     В случае успеха - изменение в БД.
@@ -65,7 +72,7 @@ def change_product_description(
     return False
 
 
-def create_and_check_descriptions(items: list) -> Union[Tuple[list, str], Tuple[None, None]]:
+def create_and_check_charts_descriptions(items: list) -> Union[Tuple[list, str], Tuple[None, None]]:
     """
     Проверка наличия описаний элементов ТТК.
     Создание описания блюда.
@@ -116,7 +123,7 @@ def check_charts() -> None:
                             if chart is not None:
                                 items = chart.items
                                 if len(items) != 0:
-                                    empty_description_product_list, dish_description = create_and_check_descriptions(
+                                    empty_description_product_list, dish_description = create_and_check_charts_descriptions(
                                         items)
                                     if empty_description_product_list is None and dish_description is None:
                                         monitoring.status = 'Ошибка'
@@ -129,7 +136,8 @@ def check_charts() -> None:
                                                 empty_description_product_list)
                                             monitoring.save()
                                         else:
-                                            if change_product_description(product, dish_description, iiko_server):
+                                            if change_product_description_on_server(product, dish_description,
+                                                                                    iiko_server):
                                                 monitoring.status = 'Успешно'
                                                 monitoring.save()
                                                 product.description = dish_description
@@ -166,7 +174,7 @@ def check_charts() -> None:
         UserLog.objects.create(status='Проверка ТТК была прервана')
 
 
-def create_organizations() -> bool:
+def get_departments() -> bool:
     """
     Создание и/или обновление торговых точек в БД.
     Обновление по uuid торговой точки.
@@ -190,17 +198,3 @@ def create_organizations() -> bool:
         else:
             UserLog.objects.create(status='Загрузка торговых точек не выполнена')
             return False
-
-
-def create_document_on_server(document: DocumentData) -> Union[Tuple[bool, str], Tuple[bool, dict]]:
-    """
-    Отправка приказа об изменении цен на сервер.
-    """
-    iiko_server = IikoServer(Chain.objects.first())
-    response = iiko_server.document(document)
-    if response.status_code == 200:
-        response = json.loads(response.text)
-        if response['result'] == 'SUCCESS':
-            return True, response
-        return False, response
-    return False, response.text
