@@ -41,7 +41,7 @@ class UserLog(models.Model):
 
     class Meta:
         verbose_name = 'запись'
-        verbose_name_plural = 'Пользовательские логи'
+        verbose_name_plural = 'Журнал событий'
 
     def __str__(self):
         return f'Лог №{self.pk} от ' + str(self.time.strftime('%H:%M:%S %d.%m.%Y'))

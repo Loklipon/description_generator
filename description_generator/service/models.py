@@ -3,7 +3,7 @@ from django.db import models
 
 class Product(models.Model):
     """
-    Продукт.
+    Элемент номенклатуры.
     """
 
     class Meta:
@@ -67,7 +67,7 @@ class Monitoring(models.Model):
         max_length=200,
         verbose_name='Описание'
     )
-    date = models.DateField(
+    time = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата выгрузки'
     )
@@ -133,34 +133,50 @@ class Document(models.Model):
     """
 
     class Meta:
-        verbose_name = 'приказ'
+        verbose_name = 'документ'
         verbose_name_plural = 'Приказы'
 
     def __str__(self):
-        return 'Приказ'
+        return ''
 
-    document_number = models.CharField(
+    file_name = models.CharField(
         max_length=200,
-        verbose_name='Номер приказа',
-        null=True
-    )
-    date = models.DateTimeField(
-        verbose_name='Дата создания',
-        auto_now_add=True,
-        null=True
-    )
-    organization = models.ForeignKey(
-        Chain,
-        on_delete=models.SET_NULL,
-        verbose_name='Организация',
-        null=True
+        verbose_name='Название файла',
+        null=True,
+        blank=True
     )
     file = models.FileField(
         verbose_name='Файл приказа',
         null=True
     )
-    response = models.TextField(
-        verbose_name='Body ответа',
+    check_file = models.BooleanField(
+        verbose_name='Обработка файла',
+        null=True,
+        blank=True
+    )
+    file_errors = models.TextField(
+        verbose_name='Ошибки файла',
+        null=True,
+        blank=True
+    )
+    check_document = models.BooleanField(
+        verbose_name='Создание приказа',
+        null=True,
+    )
+    document_errors = models.TextField(
+        verbose_name='Ошибки приказа',
+        null=True,
+        blank=True
+    )
+    document_number = models.CharField(
+        max_length=200,
+        verbose_name='Номер приказа',
+        null=True,
+        blank=True
+    )
+    date = models.DateTimeField(
+        verbose_name='Время загрузки',
+        auto_now_add=True,
         null=True
     )
 
