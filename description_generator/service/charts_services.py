@@ -161,21 +161,23 @@ def check_charts() -> None:
                                 monitoring.save()
                         else:
                             monitoring.status = 'Ошибка'
-                            monitoring.error = 'Ошибка исполнения программы'
+                            monitoring.error = 'Ошибка исполнения программы. Код ошибки 1.'
                             monitoring.save()
                     except Exception as e:
                         print(e)
+                        monitoring.status = 'Ошибка'
+                        monitoring.error = 'Ошибка исполнения программы. Код ошибки 2.'
                         continue
         except Exception as e:
             print(e)
             iiko_server.logout()
-            UserLog.objects.create(status='Проверка ТТК была прервана')
+            UserLog.objects.create(status='Проверка ТТК была прервана. Код ошибки 3.')
             return
         iiko_server.logout()
         UserLog.objects.create(status='Проверка ТТК выполнена успешно')
     except Exception as e:
         print(e)
-        UserLog.objects.create(status='Проверка ТТК была прервана')
+        UserLog.objects.create(status='Проверка ТТК была прервана. Код ошибки 4.')
 
 
 def get_departments() -> bool:
