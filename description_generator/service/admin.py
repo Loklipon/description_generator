@@ -51,11 +51,11 @@ class MonitoringAdmin(admin.ModelAdmin):
         return my_urls + urls
 
     def load_data(self, request):
-        if timezone.localtime(timezone.now()).hour in [23, 0, 1, 2]:
-            messages.error(request, 'В данное время нельзя осуществить ручную загрузку данных')
+        if timezone.localtime(timezone.now()).hour in [23, 0]:
+            messages.error(request, 'Нельзя осуществить ручную загрузку данных с 23:00 до 01:00')
             return HttpResponseRedirect('../')
         config = Config.objects.first()
-        if config.check_button:
+        if config.process or config.check_button:
             messages.error(request, 'Предыдущая загрузка данных еще не завершена')
             return HttpResponseRedirect('../')
         config.check_button = True
@@ -91,11 +91,11 @@ class DocumentAdmin(admin.ModelAdmin):
         return False
 
     def save_model(self, request, obj, form, change):
-        if timezone.localtime(timezone.now()).hour in [23, 0, 1, 2]:
+        if timezone.localtime(timezone.now()).hour in [23, 0]:
             messages.set_level(request, messages.ERROR)
-            messages.error(request, 'В данное время нельзя осуществить загрузку приказа.')
+            messages.error(request, 'Нельзя осуществить загрузку приказа с 23:00 до 01:00')
             return HttpResponseRedirect('../')
-        if Config.objects.first().check_button:
+        if Config.objects.first().process:
             messages.set_level(request, messages.ERROR)
             messages.error(request, 'Во время анализа ТТК нельзя создать приказ.')
             return HttpResponseRedirect('../')

@@ -10,15 +10,6 @@ from .dataclasses.charts import ResponseData
 from .dataclasses.nomenclature import ProductData
 from .models import Product, Monitoring, Department, Chain
 
-FILE_ERRORS_MESSAGES = {
-    'empty_field': 'Не заполнено одно из полей. Строки: ',
-    'wrong_type_of_filed': 'В одном из полей неверный тип данных. Строки: ',
-    'no_product': 'В номенклатуре нет продукта с таким артикулом. Строки: ',
-    'a_lot_of_products': 'В номенклатуре две или более единицы таким артикулом. Строки: ',
-    'no_department': 'Нет торговой точки с таким названием. Строки: ',
-    'any_other': 'У организации две или более торговых точек с одинаковым названием. Строки: '
-}
-
 
 def get_nomenclature() -> bool:
     """
@@ -167,6 +158,7 @@ def check_charts() -> None:
                         print(e)
                         monitoring.status = 'Ошибка'
                         monitoring.error = 'Ошибка исполнения программы. Код ошибки 2.'
+                        monitoring.save()
                         continue
         except Exception as e:
             print(e)

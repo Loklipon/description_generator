@@ -185,3 +185,6 @@ class Config(models.Model):
     check_button = models.BooleanField(
         default=False
     )
+    process = models.BooleanField(
+        default=False
+    )

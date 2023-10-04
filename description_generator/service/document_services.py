@@ -4,10 +4,18 @@ from django.utils import timezone
 from openpyxl import load_workbook
 
 from iiko.server import IikoServer
-from .charts_services import FILE_ERRORS_MESSAGES
 from .dataclasses.create_document_request import DocumentData
 from .dataclasses.create_document_response import Response
 from .models import Chain, Product, Department, Document
+
+FILE_ERRORS_MESSAGES = {
+    'empty_field': 'Не заполнено одно из полей. Строки: ',
+    'wrong_type_of_filed': 'В одном из полей неверный тип данных. Строки: ',
+    'no_product': 'В номенклатуре нет продукта с таким артикулом. Строки: ',
+    'a_lot_of_products': 'В номенклатуре две или более единицы таким артикулом. Строки: ',
+    'no_department': 'Нет торговой точки с таким названием. Строки: ',
+    'a_lot_of_departments': 'У организации две или более торговых точек с одинаковым названием. Строки: '
+}
 
 
 def excel_file_handler(file) -> Union[Tuple[DocumentData, dict], Tuple[None, dict]]:
