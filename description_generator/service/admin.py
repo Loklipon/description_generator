@@ -77,7 +77,6 @@ class MonitoringAdmin(admin.ModelAdmin):
 class DocumentAdmin(admin.ModelAdmin):
     list_display = ('file_name', 'get_time', 'check_file',
                     'check_document', 'document_number')
-    fields = ('file',)
 
     def get_time(self, obj):
         return timezone.localtime(obj.date).strftime('%H:%M:%S %d.%m.%y')
