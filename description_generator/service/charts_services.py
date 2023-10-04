@@ -100,55 +100,60 @@ def check_charts() -> None:
     try:
         products = Product.objects.filter(type='DISH', checked=False)
         iiko_server = IikoServer(Chain.objects.first())
-        for product in products:
-            product.checked = True
-            product.save()
-            if product.num is None:
-                Monitoring.objects.create(
-                    dish_name=product.name,
-                    num=product.num,
-                    status='Ошибка',
-                    error='У блюда отсутствует артикул'
-                )
-            else:
-                monitoring = Monitoring.objects.create(
-                    dish_name=product.name,
-                    num=product.num)
-                response = iiko_server.chart(product)
-                try:
-                    if response.status_code == 200:
-                        response_data = ResponseData.parse_raw(response.text)
-                        if response_data is not None:
-                            chart = response_data.prepared_charts[0]
-                            if chart is not None:
-                                items = chart.items
-                                if len(items) != 0:
-                                    empty_description_product_list, dish_description = create_and_check_charts_descriptions(
-                                        items)
-                                    if empty_description_product_list is None and dish_description is None:
-                                        monitoring.status = 'Ошибка'
-                                        monitoring.error = 'В составе ТТК содержится элемент, отсутствующий в номенклатуре'
-                                        monitoring.save()
-                                    else:
-                                        if len(empty_description_product_list) != 0:
+        try:
+            for product in products:
+                product.checked = True
+                product.save()
+                if product.num is None:
+                    Monitoring.objects.create(
+                        dish_name=product.name,
+                        num=product.num,
+                        status='Ошибка',
+                        error='У блюда отсутствует артикул'
+                    )
+                else:
+                    monitoring = Monitoring.objects.create(
+                        dish_name=product.name,
+                        num=product.num)
+                    response = iiko_server.chart(product)
+                    try:
+                        if response.status_code == 200:
+                            response_data = ResponseData.parse_raw(response.text)
+                            if response_data is not None:
+                                chart = response_data.prepared_charts[0]
+                                if chart is not None:
+                                    items = chart.items
+                                    if len(items) != 0:
+                                        empty_description_product_list, dish_description = create_and_check_charts_descriptions(
+                                            items)
+                                        if empty_description_product_list is None and dish_description is None:
                                             monitoring.status = 'Ошибка'
-                                            monitoring.error = 'Не заполнено поле "Описание" у ингредиентов: ' + '; '.join(
-                                                empty_description_product_list)
+                                            monitoring.error = 'В составе ТТК содержится элемент, отсутствующий в номенклатуре'
                                             monitoring.save()
                                         else:
-                                            if change_product_description_on_server(product, dish_description,
-                                                                                    iiko_server):
-                                                monitoring.status = 'Успешно'
-                                                monitoring.save()
-                                                product.description = dish_description
-                                                product.save()
-                                            else:
+                                            if len(empty_description_product_list) != 0:
                                                 monitoring.status = 'Ошибка'
-                                                monitoring.error = 'Не удалось изменить описание у блюда'
+                                                monitoring.error = 'Не заполнено поле "Описание" у ингредиентов: ' + '; '.join(
+                                                    empty_description_product_list)
                                                 monitoring.save()
+                                            else:
+                                                if change_product_description_on_server(product, dish_description,
+                                                                                        iiko_server):
+                                                    monitoring.status = 'Успешно'
+                                                    monitoring.save()
+                                                    product.description = dish_description
+                                                    product.save()
+                                                else:
+                                                    monitoring.status = 'Ошибка'
+                                                    monitoring.error = 'Не удалось изменить описание у блюда'
+                                                    monitoring.save()
+                                    else:
+                                        monitoring.status = 'Ошибка'
+                                        monitoring.error = 'ТТК не заполнена'
+                                        monitoring.save()
                                 else:
                                     monitoring.status = 'Ошибка'
-                                    monitoring.error = 'ТТК не заполнена'
+                                    monitoring.error = 'У блюда отсутствует ТТК'
                                     monitoring.save()
                             else:
                                 monitoring.status = 'Ошибка'
@@ -156,17 +161,16 @@ def check_charts() -> None:
                                 monitoring.save()
                         else:
                             monitoring.status = 'Ошибка'
-                            monitoring.error = 'У блюда отсутствует ТТК'
+                            monitoring.error = 'Ошибка исполнения программы'
                             monitoring.save()
-                    else:
-                        monitoring.status = 'Ошибка'
-                        monitoring.error = 'Ошибка исполнения программы'
-                        monitoring.save()
-                        UserLog.objects.create(status='Проверка ТТК не выполнена')
-                except Exception as e:
-                    iiko_server.logout()
-                    print(e)
-                    UserLog.objects.create(status='Проверка ТТК была прервана')
+                    except Exception as e:
+                        print(e)
+                        continue
+        except Exception as e:
+            print(e)
+            iiko_server.logout()
+            UserLog.objects.create(status='Проверка ТТК была прервана')
+            return
         iiko_server.logout()
         UserLog.objects.create(status='Проверка ТТК выполнена успешно')
     except Exception as e:
